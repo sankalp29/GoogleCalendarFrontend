@@ -7,9 +7,12 @@ import React, {
 
 import GlobalContext from "./GlobalContext";
 import dayjs from "dayjs";
+import { fetchEvents, createEvent as apiCreate, updateEvent as apiUpdate, deleteEvent as apiDelete } from "../api/events";
   
 function savedEventsReducer(state, { type, payload }) {
     switch (type) {
+      case "set":
+        return Array.isArray(payload) ? payload : state;
       case "push":
         return [...state, payload];
       case "update":
@@ -36,7 +39,7 @@ export default function ContextWrapper(props) {
     const [showEventModal, setShowEventModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [labels, setLabels] = useState([]);
-    const [savedEvents, dispatchCalEvent] = useReducer(
+    const [savedEvents, dispatch] = useReducer(
       savedEventsReducer,
       [],
       initEvents
@@ -87,6 +90,38 @@ export default function ContextWrapper(props) {
       setLabels(
         labels.map((lbl) => (lbl.label === label.label ? label : lbl))
       );
+    }
+
+    // Initial load from backend (hydrates state, still keeps localStorage as cache)
+    useEffect(() => {
+      (async () => {
+        try {
+          const serverEvents = await fetchEvents();
+          if (Array.isArray(serverEvents)) {
+            dispatch({ type: "set", payload: serverEvents });
+          }
+        } catch (e) {
+          // Ignore network errors; continue with local data
+        }
+      })();
+    }, []);
+
+    // Dispatch wrapper that syncs with backend
+    async function dispatchCalEvent(action) {
+      const { type, payload } = action;
+      try {
+        if (type === "push") {
+          await apiCreate(payload);
+        } else if (type === "update") {
+          await apiUpdate(payload.id, payload);
+        } else if (type === "delete") {
+          await apiDelete(payload.id);
+        }
+        dispatch(action);
+      } catch (e) {
+        console.error("Event sync failed:", e);
+        // Optionally show a toast; for now we do not mutate state on failure
+      }
     }
   
     return (
