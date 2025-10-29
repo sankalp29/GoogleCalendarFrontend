@@ -33,3 +33,11 @@ npm start
 ## Data flow
 - On load: fetch events from backend; localStorage is used as cache.
 - Mutations: call backend first, then update context state.
+
+## Future enhancements
+- Week/Day timeslot grids with spatial event placement.
+- Drag & drop to create/move/resize events.
+- Recurring events
+- Start/end times and multi‑day spanning events.
+- Timezone‑aware.
+- Theming (dark mode) and color‑blind friendly palettes.
